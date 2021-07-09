@@ -1,0 +1,31 @@
+{
+    "name": "f-bot",
+    "version": "1.0.0",
+    "description": "ƒGuy's discord bot.",
+    "scripts": {
+        "build": "npx tsc",
+        "start": "node build/index.js",
+        "build-and-start": "npm run build && npm run start",
+        "test": "npx mocha --require ts-node/register test/**/*.ts"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@discordjs/opus": "^0.5.3",
+        "discord.js": "^12.5.3",
+        "emoji-regex": "^9.2.2",
+        "object-hash": "^2.2.0"
+    },
+    "devDependencies": {
+        "@types/chai": "^4.2.19",
+        "@types/mocha": "^8.2.2",
+        "@types/node": "^15.12.5",
+        "@types/object-hash": "^2.1.0",
+        "chai": "^4.3.4",
+        "mocha": "^9.0.1",
+        "npm-check-updates": "^11.7.1",
+        "ts-node": "^10.0.0",
+        "typescript": "^4.3.4"
+    }
+}

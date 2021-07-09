@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "downlevelIteration": true,
+        "lib": [
+            "ESNext"
+        ],
+        "module": "CommonJS",
+        "outDir": "build",
+        "rootDir": "src",
+        "target": "ES6",
+        "strict": true,
+        "esModuleInterop": true,
+        "inlineSourceMap": true,
+        "skipLibCheck": true
+    },
+    "exclude": [
+        "node_modules/**/*",
+        "test/**/*"
+    ]
+}
