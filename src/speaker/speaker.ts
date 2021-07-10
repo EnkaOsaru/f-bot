@@ -85,8 +85,9 @@ class TemplateSpeech implements Speech {
 export class Speaker {
     private readonly speeches: Speech[] = [];
 
-    private readonly voiceConnection: VoiceConnection;
     private resolveCurrentAudio?: () => void;
+
+    readonly voiceConnection: VoiceConnection;
 
     isSpeaking = false;
 

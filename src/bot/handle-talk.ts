@@ -1,4 +1,4 @@
-import { Collection, Message } from 'discord.js';
+import { Collection, Message, VoiceState } from 'discord.js';
 
 import { Talk, TalkMap, TalkSkip, TalkVoice } from './grammar';
 
@@ -7,6 +7,8 @@ import { Speaker } from '../speaker';
 import { getVoices, getUserVoice, setUserVoice } from '../voice';
 
 import { sanitize, addMap, removeMap, getMaps, findMap } from '../sanitize';
+
+import { getUsername } from './username';
 
 import { escape, toMonospace, fromMonospace } from './utility';
 
@@ -213,4 +215,53 @@ export function say(message: Message) {
     }
 
     speaker.say(content, getUserVoice(message.author.id));
+}
+
+export function onVoiceStateUpdate(oldState: VoiceState, newState: VoiceState) {
+    if (!speaker) {
+        return;
+    }
+
+    // If someone joined
+    if (!oldState.channel && newState.channel) {
+        // Ignore if the event is from an irrelevant channel
+        if (newState.channel.id !== speaker.voiceConnection.channel.id) {
+            return;
+        }
+
+        const user = newState.member?.user;
+
+        if (!user) {
+            return;
+        }
+
+        speaker.say(`${sanitize(getUsername(user))}が入室しました`, 'man');
+
+        return;
+    }
+
+    // If someone left
+    if (oldState.channel && !newState.channel) {
+        // Ignore if the event is from an irrelevant channel
+        if (oldState.channel.id !== speaker.voiceConnection.channel.id) {
+            return;
+        }
+
+        // Leave the voice chat after everyone left
+        if (oldState.channel.members.size === 1) {
+            speaker.reset();
+            speaker.voiceConnection.disconnect();
+            speaker = undefined;
+
+            return;
+        }
+
+        const user = newState.member?.user;
+
+        if (!user) {
+            return;
+        }
+
+        speaker.say(`${sanitize(getUsername(user))}が退室しました`, 'man');
+    }
 }

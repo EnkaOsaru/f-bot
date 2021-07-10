@@ -49,6 +49,7 @@ export function login() {
     const client = new Client({ ws: { intents } });
 
     client.on('message', onMessage);
+    client.on('voiceStateUpdate', handleTalk.onVoiceStateUpdate);
 
     client.login(getToken());
 }
