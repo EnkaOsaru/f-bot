@@ -1,7 +1,7 @@
 import { token, tokenInteger, tokenString } from '../parse';
 
 export interface Value {
-    value?: string;
+    value: string;
 }
 
 export interface TalkSkip {
@@ -32,8 +32,22 @@ export interface Talk {
     map?: TalkMap;
 }
 
+export interface PollOpen {
+    title?: string;
+    optionA?: string;
+    optionB?: string;
+    optionC?: string;
+    optionD?: string;
+}
+
+export interface Poll {
+    open?: PollOpen;
+    repeat?: {};
+}
+
 export interface Command {
     talk?: Talk;
+    poll?: Poll;
 }
 
 const parser = token('root', /^!f$/).thenBranch(
@@ -50,6 +64,16 @@ const parser = token('root', /^!f$/).thenBranch(
             token('add').thenList(tokenString('from'), tokenString('to')),
             token('remove').thenSingle(tokenString('value'))
         )
+    ),
+    token('poll').thenBranch(
+        token('open').thenList(
+            tokenString('title'),
+            tokenString('optionA'),
+            tokenString('optionB'),
+            tokenString('optionC'),
+            tokenString('optionD')
+        ),
+        token('repeat')
     )
 );
 

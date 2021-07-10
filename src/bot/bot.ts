@@ -7,10 +7,15 @@ import { Command, parse } from './grammar';
 import { escape } from './utility';
 
 import * as handleTalk from './handle-talk';
+import * as handlePoll from './handle-poll';
 
 async function runCommand(message: Message, command: Command) {
     if (command.talk) {
         await handleTalk.run(message, command.talk);
+    }
+
+    if (command.poll) {
+        await handlePoll.run(message, command.poll);
     }
 }
 
