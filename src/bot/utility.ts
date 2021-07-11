@@ -74,3 +74,37 @@ export function fromMonospace(text: string) {
 
     return result;
 }
+
+export function integerToBase64(integer: string) {
+    let hex = BigInt(integer).toString(16);
+
+    if (hex.length % 2 === 1) {
+        hex = '0' + hex;
+    }
+
+    const bytes = new Array<number>(hex.length / 2);
+
+    for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = parseInt(hex.substring(2 * i, 2 * i + 1), 16);
+    }
+
+    return Buffer.from(Uint8Array.from(bytes)).toString('base64');
+}
+
+export function base64ToInteger(base64: string) {
+    const bytes = Uint8Array.from(Buffer.from(base64, 'base64'));
+
+    let hex = '';
+
+    for (const byte of bytes) {
+        let byteHex = byte.toString(16);
+
+        if (byteHex.length === 1) {
+            byteHex = '0' + byteHex;
+        }
+
+        hex += byteHex;
+    }
+
+    return BigInt('0x' + hex).toString();
+}
