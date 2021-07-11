@@ -1,18 +1,31 @@
-import { Collection, Message, VoiceState } from 'discord.js';
-
-import { Talk, TalkMap, TalkSkip, TalkVoice } from './grammar';
+import { Collection, Message, Snowflake, User, VoiceState } from 'discord.js';
 
 import { Speaker } from '../speaker';
+
+import { JSONStorage } from '../json-storage';
+
+import { Talk, TalkMap, TalkSkip, TalkVoice } from './grammar';
 
 import { getVoices, getUserVoice, setUserVoice } from '../voice';
 
 import { sanitize, addMap, removeMap, getMaps, findMap } from '../sanitize';
 
-import { getUsername } from './username';
-
 import { escape, toMonospace, fromMonospace } from './utility';
 
 let speaker: Speaker | undefined;
+
+async function leaveVoiceChannel(message?: Message) {
+    speaker?.reset();
+
+    if (message) {
+        await message.channel.send(`:wave: **Goodbye!**`);
+        await speaker?.notifyLeave();
+    }
+
+    speaker?.voiceConnection.channel.leave();
+
+    speaker = undefined;
+}
 
 async function runJoin(message: Message) {
     if (speaker) {
@@ -45,15 +58,7 @@ async function runLeave(message: Message) {
         throw `You have to be in a voice channel.`;
     }
 
-    message.channel.send(`:wave: **Goodbye!**`);
-
-    speaker.reset();
-
-    await speaker.notifyLeave();
-
-    speaker = undefined;
-
-    voiceChannel.leave();
+    leaveVoiceChannel(message);
 }
 
 function runSkip(message: Message, skip: TalkSkip) {
@@ -217,51 +222,70 @@ export function say(message: Message) {
     speaker.say(content, getUserVoice(message.author.id));
 }
 
+interface Username {
+    id: Snowflake;
+    name: string;
+}
+
+interface UsernameStorage {
+    usernames: Username[];
+}
+
+const usernameStorage = new JSONStorage<UsernameStorage>('username');
+
+function getUsername(user: User) {
+    const { usernames } = usernameStorage.read();
+
+    for (const { id, name } of usernames) {
+        if (user.id === id) {
+            return name;
+        }
+    }
+
+    return sanitize(user.username);
+}
+
+function notifyUserPresence(newState: VoiceState) {
+    const user = newState.member?.user;
+
+    if (!user) {
+        return;
+    }
+
+    const username = getUsername(user);
+
+    if (newState.channel) {
+        // If someone joined
+        speaker?.say(`${username}が入室しました`, 'man');
+    } else {
+        // If someone left
+        speaker?.say(`${username}が退室しました`, 'man');
+    }
+}
+
 export function onVoiceStateUpdate(oldState: VoiceState, newState: VoiceState) {
     if (!speaker) {
         return;
     }
 
+    const currentChannel = speaker.voiceConnection.channel;
+    const oldChannel = oldState.channel;
+    const newChannel = newState.channel;
+
     // If someone joined
-    if (!oldState.channel && newState.channel) {
-        // Ignore if the event is from an irrelevant channel
-        if (newState.channel.id !== speaker.voiceConnection.channel.id) {
-            return;
-        }
-
-        const user = newState.member?.user;
-
-        if (!user) {
-            return;
-        }
-
-        speaker.say(`${sanitize(getUsername(user))}が入室しました`, 'man');
-
+    if (oldChannel?.id !== currentChannel.id && newChannel?.id === currentChannel.id) {
+        notifyUserPresence(newState);
         return;
     }
 
     // If someone left
-    if (oldState.channel && !newState.channel) {
-        // Ignore if the event is from an irrelevant channel
-        if (oldState.channel.id !== speaker.voiceConnection.channel.id) {
-            return;
-        }
-
+    if (oldChannel?.id === currentChannel.id && newChannel?.id !== currentChannel.id) {
         // Leave the voice chat after everyone left
-        if (oldState.channel.members.size === 1) {
-            speaker.reset();
-            speaker.voiceConnection.disconnect();
-            speaker = undefined;
-
+        if (oldChannel.members.size === 1) {
+            leaveVoiceChannel();
             return;
         }
 
-        const user = newState.member?.user;
-
-        if (!user) {
-            return;
-        }
-
-        speaker.say(`${sanitize(getUsername(user))}が退室しました`, 'man');
+        notifyUserPresence(newState);
     }
 }
