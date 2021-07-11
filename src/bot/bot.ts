@@ -24,8 +24,10 @@ async function onMessage(message: Message) {
         return;
     }
 
-    if (message.channel.id !== '636809317969952768') {
-        return;
+    if (message.guild.id === '632536123838824449') {
+        if (message.channel.id !== '636809317969952768') {
+            return;
+        }
     }
 
     const command = parse(message.content);
@@ -41,11 +43,15 @@ async function onMessage(message: Message) {
     try {
         await runCommand(message, command);
     } catch (error) {
-        message.channel.send(`:warning: **${escape(error)}**`);
+        if (typeof error === 'string') {
+            message.channel.send(`:warning: **${escape(error)}**`);
+        } else {
+            console.error(error);
+        }
     }
 }
 
-export function login() {
+export async function login() {
     const intents = new Intents([
         Intents.NON_PRIVILEGED,
         "GUILD_MEMBERS",

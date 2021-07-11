@@ -42,7 +42,7 @@ export interface PollOpen {
 
 export interface Poll {
     open?: PollOpen;
-    repeat?: {};
+    close?: {};
 }
 
 export interface Command {
@@ -73,7 +73,7 @@ const parser = token('root', /^!f$/).thenBranch(
             tokenString('optionC'),
             tokenString('optionD')
         ),
-        token('repeat')
+        token('close')
     )
 );
 
