@@ -72,10 +72,10 @@ function runSkip(message: Message, skip: TalkSkip) {
 
     if (skip.all) {
         speaker.reset();
-        message.channel.send(`:track_next: Skipping all the speeches.`);
+        message.channel.send(`:track_next: **Skipping all the speeches.**`);
     } else {
         speaker.skip();
-        message.channel.send(`:track_next: Skipping the current speech.`);
+        message.channel.send(`:track_next: **Skipping the current speech.**`);
     }
 }
 
