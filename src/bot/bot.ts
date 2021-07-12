@@ -33,6 +33,10 @@ async function onMessage(message: Message) {
     const command = parse(message.content);
 
     if (!command) {
+        if (message.guild.id !== '632536123838824449') {
+            return;
+        }
+
         // Speak the message if it's not a command
         handleTalk.say(message);
 
