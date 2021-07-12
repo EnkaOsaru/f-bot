@@ -14,7 +14,6 @@ class Token {
     private children: Token[] = [];
 
     private chain: TokenChainFunction = this.chainBranch;
-
     private store: TokenStoreFunction = this.storeTree;
 
     constructor(name: string, pattern?: RegExp) {
@@ -56,6 +55,11 @@ class Token {
         return this;
     }
 
+    asVarArg() {
+        this.store = this.storeVarArg;
+        return this;
+    }
+
     parse(text: string): object {
         return this._parse(split(text)).object;
     }
@@ -72,10 +76,10 @@ class Token {
 
     private chainList(words: string[], result: any) {
         for (const child of this.children) {
-            const data = child._parse(words, result);
-
-            if (!data.success) {
-                return;
+            if (child.store === child.storeVarArg) {
+                while (child._parse(words, result).success);
+            } else {
+                child._parse(words, result);
             }
         }
     }
@@ -100,6 +104,18 @@ class Token {
         this.children[0]._parse(words, result);
     }
 
+    private chainVarArg(words: string[], result: any) {
+        const child = this.children[0];
+
+        while (true) {
+            const data = child._parse(words, result);
+
+            if (!data.success) {
+                return;
+            }
+        }
+    }
+
     private storeTree(result: any, data: TokenStoreData) {
         // Store the tree structure with the given name
         result[this.name] = data.tree;
@@ -108,6 +124,17 @@ class Token {
     private storeValue(result: any, data: TokenStoreData) {
         // Store the matched word with the given name
         result[this.name] = data.word;
+    }
+
+    private storeVarArg(result: any, data: TokenStoreData) {
+        // Store as many words as there are
+        const words: string[] | undefined = result[this.name];
+
+        if (!words) {
+            result[this.name] = [data.word];
+        } else {
+            words.push(data.word);
+        }
     }
 
     private _parse(words: string[], result: any = {}): TokenParseData {
