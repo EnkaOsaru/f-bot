@@ -34,10 +34,7 @@ export interface Talk {
 
 export interface PollOpen {
     title?: string;
-    optionA?: string;
-    optionB?: string;
-    optionC?: string;
-    optionD?: string;
+    options?: string[];
 }
 
 export interface Poll {
@@ -68,10 +65,7 @@ const parser = token('root', /^!f$/).thenBranch(
     token('poll').thenBranch(
         token('open').thenList(
             tokenString('title'),
-            tokenString('optionA'),
-            tokenString('optionB'),
-            tokenString('optionC'),
-            tokenString('optionD')
+            tokenString('options').asVarArg()
         ),
         token('close')
     )

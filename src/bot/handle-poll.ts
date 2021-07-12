@@ -1,47 +1,131 @@
-import { Message, MessageReaction } from 'discord.js';
+import { Message } from 'discord.js';
 
 import { Poll, PollOpen } from './grammar';
 
-import { base64ToInteger, escape, integerToBase64 } from './utility';
+import { escape, toMonospace } from './utility';
+import { replace } from '../utility';
 
-const NUMBER_EMOJIS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+const EMOJI_NUMBERS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+const EMOJI_RANKS = [':first_place:', ':second_place:', ':third_place:'];
+const POLL_PREFIX_RUNNING = ':green_circle: :ballot_box: **[Running]** ';
+const POLL_PREFIX_CLOSED = ':red_circle: :ballot_box: **[Closed]** ';
+
+function getRunningPollContent(username: string, title: string, options: string[]) {
+    const lines = new Array<string>(options.length + 2);
+
+    // Write the header and the title
+    lines[0] = `${POLL_PREFIX_RUNNING} **Poll started by ${escape(username)}.**`;
+    lines[1] = `**${escape(title)}**`;
+
+    // The length of the greatest index as a string
+    const indexLength = Math.ceil(Math.log10(options.length + 1));
+
+    for (let i = 0; i < options.length; i++) {
+        const index = toMonospace((i + 1).toString().padStart(indexLength, '0'));
+        const option = escape(options[i]);
+        lines[i + 2] = `    ${index}. **${option}**`;
+    }
+
+    return lines.join('\n');
+}
 
 async function runOpen(message: Message, open: PollOpen) {
-    const title = open.title;
+    const title = open?.title;
+    const options = open?.options;
 
-    if (!title) {
-        throw `You need to specify the title first.`;
+    if (!title || !options || options.length < 2) {
+        throw `Not enough arguments. Usage: "!f poll open [title] [option1] [option2] ...".`;
     }
 
-    // Get options in order as an array
-    const options = [open.optionA, open.optionB, open.optionC, open.optionD]
-        .filter(option => option)
-        .map(option => option!);
-
-    if (options.length < 2) {
-        throw `You need at least 2 options to start a poll.`;
+    if (options.length > EMOJI_NUMBERS.length) {
+        throw `You can't specify more than ${EMOJI_NUMBERS.length} options.`;
     }
 
-    const username = message.member?.user?.username ?? 'someone';
+    const pollContent = getRunningPollContent(message.author.username, title, options);
+    const pollMessage = await message.channel.send(pollContent);
 
-    let response = `:ballot_box: **Poll started by ${escape(username)}: ${escape(title)}**\n`;
-
-    // List up the options
+    // Add reaction buttons
     for (let i = 0; i < options.length; i++) {
-        const option = escape(options[i]);
-        const emoji = NUMBER_EMOJIS[i];
+        await pollMessage.react(EMOJI_NUMBERS[i]);
+    }
+}
 
-        response += `    ${i + 1}. **${option}**\n`;
+function getVoteCountsAndSum(pollMessage: Message): [number[], number] {
+    // Content line count - 2 is the number of options
+    let optionCount = -1;
+
+    for (const char of pollMessage.content) {
+        if (char === '\n') {
+            optionCount++;
+        }
     }
 
-    response = response.trimRight();
+    // Count the number of votes for each reaction
+    let sum = 0;
+    const counts = new Array<number>(optionCount);
 
-    // Send the response and add reaction buttons to it
-    let pollMessage = await message.channel.send(response);
+    for (let i = 0; i < optionCount; i++) {
+        const emoji = EMOJI_NUMBERS[i];
+        const reaction = pollMessage.reactions.resolve(emoji);
+        const count = (reaction?.count ?? 1) - 1;
 
-    for (let i = 0; i < options.length; i++) {
-        await pollMessage.react(NUMBER_EMOJIS[i]);
+        sum += count;
+        counts[i] = count;
     }
+
+    return [counts, sum];
+}
+
+function getVoteRankEmojis(voteCounts: number[]) {
+    const counts = [...voteCounts];
+    const emojis = new Array<string>(counts.length);
+
+    for (let i = 0; i < emojis.length; i++) {
+        const max = Math.max(0, ...counts);
+
+        for (let j = 0; j < counts.length; j++) {
+            if (counts[j] === max) {
+                counts[j] = -1;
+                emojis[j] = EMOJI_RANKS[i] ?? '';
+            }
+        }
+    }
+
+    return emojis;
+}
+
+function getClosedPollContent(pollMessage: Message) {
+    const [counts, sum] = getVoteCountsAndSum(pollMessage);
+    const emojis = getVoteRankEmojis(counts);
+
+    const lines = pollMessage.content.split('\n');
+
+    let header = lines[0];
+    header = replace(header, POLL_PREFIX_RUNNING, POLL_PREFIX_CLOSED, 1);
+    header = replace(header, 'Running', 'Closed', 1);
+    lines[0] = header;
+
+    let title = lines[1];
+    title += ` (${sum} `;
+    title += sum === 1 ? 'vote' : 'votes';
+    title += ' in total)';
+    lines[1] = title;
+
+    if (sum > 0) {
+        for (let i = 0; i < counts.length; i++) {
+            const count = counts[i];
+            const emoji = emojis[i];
+            const percentage = Math.round(100 * count / sum);
+
+            let line = lines[i + 2];
+            line += ` ${emoji} (${count} `;
+            line += count === 1 ? 'vote' : 'votes';
+            line += `, ${percentage}%)`;
+            lines[i + 2] = line;
+        }
+    }
+
+    return lines.join('\n');
 }
 
 async function runClose(message: Message) {
@@ -69,32 +153,17 @@ async function runClose(message: Message) {
         throw `You need to reference a poll message from ƒBot.`;
     }
 
-    if (!pollMessage.content.startsWith(':ballot_box:')) {
+    if (pollMessage.content.startsWith(POLL_PREFIX_CLOSED)) {
+        throw `This poll has already been closed.`;
+    }
+
+    if (!pollMessage.content.startsWith(POLL_PREFIX_RUNNING)) {
         throw `You need to reference a poll message.`;
     }
 
-    const [, ...optionLines] = pollMessage.content.split('\n');
-    const options = new Array<string>();
-
-    for (const optionLine of optionLines) {
-        const match = optionLine.match(/\d\. \*\*(.+)\*\*$/);
-
-        if (match) {
-            options.push(match[1]);
-        }
-    }
-
-    const voteCounts = new Array<number>();
-
-    for (let i = 0; i < options.length; i++) {
-        const reaction = pollMessage.reactions.resolve(NUMBER_EMOJIS[i]);
-
-        if (reaction?.count) {
-            voteCounts.push(reaction.count - 1);
-        }
-    }
-
-    message.channel.send(`:bar_chart: **The poll is closed. ${voteCounts.join(', ')}.**`);
+    // Edit the poll message and notify
+    await pollMessage.edit(getClosedPollContent(pollMessage));
+    await message.channel.send(':bar_chart: **Poll closed, check out the original message to see the result.**');
 }
 
 export async function run(message: Message, poll: Poll) {
