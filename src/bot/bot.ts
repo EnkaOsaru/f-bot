@@ -10,6 +10,10 @@ import * as handleTalk from './handle-talk';
 import * as handlePoll from './handle-poll';
 
 async function runCommand(message: Message, command: Command) {
+    if (message.content.length > 1000) {
+        throw `The command is too long. It can only have 1000 characters or fewer.`;
+    }
+
     if (command.talk) {
         await handleTalk.run(message, command.talk);
     }

@@ -2,13 +2,25 @@ import { Message } from 'discord.js';
 
 import { Poll, PollOpen } from './grammar';
 
-import { escape, toMonospace } from './utility';
-import { replace } from '../utility';
+import { escape } from './utility';
+import { getMonospace, getNumberEmoji, getRegionalIndicator, replace } from '../utility';
 
-const EMOJI_NUMBERS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+const EMOJI_COUNT = 20;
 const EMOJI_RANKS = [':first_place:', ':second_place:', ':third_place:'];
-const POLL_PREFIX_RUNNING = ':green_circle: :ballot_box: **[Running]** ';
-const POLL_PREFIX_CLOSED = ':red_circle: :ballot_box: **[Closed]** ';
+const POLL_PREFIX_RUNNING = ':green_circle: :ballot_box: **[Running]**';
+const POLL_PREFIX_CLOSED = ':red_circle: :ballot_box: **[Closed]**';
+
+function getOptionEmoji(index: number) {
+    let emoji: string | null;
+
+    if (index < 9) {
+        emoji = getNumberEmoji(index + 1);
+    } else {
+        emoji = getRegionalIndicator(index - 9);
+    }
+
+    return emoji ?? '';
+}
 
 function getRunningPollContent(username: string, title: string, options: string[]) {
     const lines = new Array<string>(options.length + 2);
@@ -17,11 +29,8 @@ function getRunningPollContent(username: string, title: string, options: string[
     lines[0] = `${POLL_PREFIX_RUNNING} **Poll started by ${escape(username)}.**`;
     lines[1] = `**${escape(title)}**`;
 
-    // The length of the greatest index as a string
-    const indexLength = Math.ceil(Math.log10(options.length + 1));
-
     for (let i = 0; i < options.length; i++) {
-        const index = toMonospace((i + 1).toString().padStart(indexLength, '0'));
+        const index = getMonospace((i + 1).toString(36).toUpperCase());
         const option = escape(options[i]);
         lines[i + 2] = `    ${index}. **${option}**`;
     }
@@ -37,8 +46,8 @@ async function runOpen(message: Message, open: PollOpen) {
         throw `Not enough arguments. Usage: "!f poll open [title] [option1] [option2] ...".`;
     }
 
-    if (options.length > EMOJI_NUMBERS.length) {
-        throw `You can't specify more than ${EMOJI_NUMBERS.length} options.`;
+    if (options.length > EMOJI_COUNT) {
+        throw `You can't specify more than ${EMOJI_COUNT} options.`;
     }
 
     const pollContent = getRunningPollContent(message.author.username, title, options);
@@ -46,7 +55,7 @@ async function runOpen(message: Message, open: PollOpen) {
 
     // Add reaction buttons
     for (let i = 0; i < options.length; i++) {
-        await pollMessage.react(EMOJI_NUMBERS[i]);
+        await pollMessage.react(getOptionEmoji(i));
     }
 }
 
@@ -65,7 +74,7 @@ function getVoteCountsAndSum(pollMessage: Message): [number[], number] {
     const counts = new Array<number>(optionCount);
 
     for (let i = 0; i < optionCount; i++) {
-        const emoji = EMOJI_NUMBERS[i];
+        const emoji = getOptionEmoji(i);
         const reaction = pollMessage.reactions.resolve(emoji);
         const count = (reaction?.count ?? 1) - 1;
 
