@@ -10,7 +10,8 @@ import { getVoices, getUserVoice, setUserVoice } from '../voice';
 
 import { sanitize, addMap, removeMap, getMaps, findMap } from '../sanitize';
 
-import { escape, toMonospace, fromMonospace } from './utility';
+import { escape } from './utility';
+import { getMonospace, getPolyspace } from '../utility';
 
 let speaker: Speaker | undefined;
 
@@ -138,7 +139,7 @@ async function runMap(message: Message, map: TalkMap) {
             throw `You must specify the id of the map you want to remove. Use "!f talk map list" to see the list of the ids.`;
         }
 
-        const id = fromMonospace(remove.value);
+        const id = getPolyspace(remove.value);
         const mapToRemove = findMap(id);
 
         if (!mapToRemove) {
@@ -162,7 +163,7 @@ async function runMap(message: Message, map: TalkMap) {
 
         for (const map of getMaps()) {
             const lines = collection.get(map.author);
-            const line = `    ${toMonospace(map.id)}  ${map.from} → ${map.to}`;
+            const line = `    ${getMonospace(map.id)}  ${map.from} → ${map.to}`;
 
             if (lines) {
                 lines.push(line);

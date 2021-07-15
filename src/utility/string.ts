@@ -35,6 +35,25 @@ export function getMonospace(string: string) {
     return result;
 }
 
+export function getPolyspace(string: string) {
+    const charCodes = [
+        ...new Array(10).fill(0x30).map((e, i) => e + i),
+        ...new Array(26).fill(0x41).map((e, i) => e + i),
+        ...new Array(26).fill(0x61).map((e, i) => e + i)
+    ];
+
+    const chars = charCodes.map(charCode => String.fromCodePoint(charCode));
+    const monospaceChars = chars.map(getMonospace);
+
+    for (let i = 0; i < chars.length; i++) {
+        const char = chars[i];
+        const monospaceChar = monospaceChars[i];
+        string = replace(string, monospaceChar, char);
+    }
+
+    return string;
+}
+
 export function getRegionalIndicator(index: number): string | null;
 export function getRegionalIndicator(char: string): string | null;
 export function getRegionalIndicator(indexOrChar: number | string) {
