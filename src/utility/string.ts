@@ -13,10 +13,15 @@ export function replace(source: string, pattern: string, replacement: string, li
 }
 
 export function getMonospace(string: string) {
+    const chars = [...string];
     let result = '';
 
-    for (let i = 0; i < string.length; i++) {
-        let charCode = string.charCodeAt(i);
+    for (const char of chars) {
+        let charCode = char.codePointAt(0);
+
+        if (!charCode) {
+            break;
+        }
 
         if (0x30 <= charCode && charCode <= 0x39) {
             // Monospace zero is at 0x1d7f6
@@ -36,22 +41,31 @@ export function getMonospace(string: string) {
 }
 
 export function getPolyspace(string: string) {
-    const charCodes = [
-        ...new Array(10).fill(0x30).map((e, i) => e + i),
-        ...new Array(26).fill(0x41).map((e, i) => e + i),
-        ...new Array(26).fill(0x61).map((e, i) => e + i)
-    ];
+    const chars = [...string];
+    let result = '';
 
-    const chars = charCodes.map(charCode => String.fromCodePoint(charCode));
-    const monospaceChars = chars.map(getMonospace);
+    for (const char of chars) {
+        let charCode = char.codePointAt(0);
 
-    for (let i = 0; i < chars.length; i++) {
-        const char = chars[i];
-        const monospaceChar = monospaceChars[i];
-        string = replace(string, monospaceChar, char);
+        if (!charCode) {
+            break;
+        }
+
+        if (0x1d7f6 <= charCode && charCode <= 0x1d7ff) {
+            // Monospace zero is at 0x1d7f6
+            charCode = 0x30 + charCode - 0x1d7f6;
+        } else if (0x1d670 <= charCode && charCode <= 0x1d689) {
+            // Monospace uppercase A is at 0x1d670
+            charCode = 0x41 + charCode - 0x1d670;
+        } else if (0x1d68a <= charCode && charCode <= 0x1d6a3) {
+            // Monospace lowercase a is at 0x1d68a
+            charCode = 0x61 + charCode - 0x1d68a;
+        }
+
+        result += String.fromCodePoint(charCode);
     }
 
-    return string;
+    return result;
 }
 
 export function getRegionalIndicator(index: number): string | null;
