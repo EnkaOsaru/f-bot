@@ -1,4 +1,4 @@
-type TokenParseData = { object: object, success: boolean };
+type TokenParseData = { object: any, success: boolean };
 
 interface TokenStoreData {
     tree: object;
@@ -60,7 +60,7 @@ class Token {
         return this;
     }
 
-    parse(text: string): object {
+    parse<T = any>(text: string): T {
         return this._parse(split(text)).object;
     }
 
@@ -102,18 +102,6 @@ class Token {
 
     private chainSingle(words: string[], result: any) {
         this.children[0]._parse(words, result);
-    }
-
-    private chainVarArg(words: string[], result: any) {
-        const child = this.children[0];
-
-        while (true) {
-            const data = child._parse(words, result);
-
-            if (!data.success) {
-                return;
-            }
-        }
     }
 
     private storeTree(result: any, data: TokenStoreData) {
