@@ -76,7 +76,7 @@ const commandTokens = [
     )
 ];
 
-const runToken = token('run', /^!f$/).thenBranch(...commandTokens);
+const runToken = token('command', /^!f$/).thenBranch(...commandTokens);
 const helpToken = token('help', /^\?f$/).thenBranch(...commandTokens);
 
 export function parse(text: string): Root {
