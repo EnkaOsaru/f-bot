@@ -1,0 +1,4 @@
+**• talk ...**
+    Set of commands for TTS feature.
+**• poll ...**
+    Set of commands to take a poll.

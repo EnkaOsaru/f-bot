@@ -1,0 +1,4 @@
+**• list**
+    Lists up all the available voices.
+**• set [voice\_name]**
+    Sets your voice to [voice\_name].

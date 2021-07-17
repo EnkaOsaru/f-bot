@@ -8,6 +8,7 @@ import { escape } from './utility';
 
 import * as handleTalk from './handle-talk';
 import * as handlePoll from './handle-poll';
+import * as handleHelp from './handle-help';
 
 async function runCommand(message: Message, command: Command) {
     if (message.content.length > 1000) {
@@ -34,9 +35,9 @@ async function onMessage(message: Message) {
         }
     }
 
-    const command = parse(message.content);
+    const root = parse(message.content);
 
-    if (!command) {
+    if (!root.help && !root.command) {
         if (message.guild.id !== '632536123838824449') {
             return;
         }
@@ -47,9 +48,14 @@ async function onMessage(message: Message) {
         return;
     }
 
-    // Run the command and report the error as a message if necessary
     try {
-        await runCommand(message, command);
+        if (root.command) {
+            // Run the command
+            await runCommand(message, root.command);
+        } else if (root.help) {
+            // Send a help message
+            await handleHelp.run(message, root.help);
+        }
     } catch (error) {
         if (typeof error === 'string') {
             message.channel.send(`:warning: **${escape(error)}**`);

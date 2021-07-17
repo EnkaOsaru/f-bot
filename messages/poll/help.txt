@@ -1,0 +1,4 @@
+**• open [title] [option1] [option2] ...**
+    Starts a poll named [title] with up to 20 options.
+**• close**
+    Terminates the poll the message refers to.

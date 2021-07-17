@@ -1,0 +1,6 @@
+**• list**
+    Lists up all the active maps.
+**• add [from\_word] [to\_word]**
+    Adds a map that replaces [from\_word] with [to\_word].
+**• remove [map\_id]**
+    Removes a map the id of which is [map\_id].

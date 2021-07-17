@@ -1,0 +1,12 @@
+**• join**
+    Joins the voice channel you're in.
+**• leave**
+    Leaves the voice channel you're in.
+**• skip**
+    Skips the current speech.
+**• skip all**
+    Skips all the speeches in the queue.
+**• voice ...**
+    Set of commands to configure your voice.
+**• map ...**
+    Set of commands for word mapping.

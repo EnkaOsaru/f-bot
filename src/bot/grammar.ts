@@ -47,7 +47,12 @@ export interface Command {
     poll?: Poll;
 }
 
-const parser = token('root', /^!f$/).thenBranch(
+export interface Root {
+    command?: Command;
+    help?: Command;
+}
+
+const commandTokens = [
     token('talk').thenBranch(
         token('join'),
         token('leave'),
@@ -69,8 +74,13 @@ const parser = token('root', /^!f$/).thenBranch(
         ),
         token('close')
     )
-);
+];
 
-export function parse(text: string): Command | undefined {
-    return (parser.parse(text) as { root?: Command })?.root;
+const runToken = token('run', /^!f$/).thenBranch(...commandTokens);
+const helpToken = token('help', /^\?f$/).thenBranch(...commandTokens);
+
+export function parse(text: string): Root {
+    const command = runToken.parse<Root>(text).command;
+    const help = helpToken.parse<Root>(text).help;
+    return { command, help };
 }
